@@ -1,0 +1,553 @@
+import tkinter as tk
+from tkinter import messagebox
+import random
+import time
+
+# =========================
+# WINDOW
+# =========================
+root = tk.Tk()
+root.title("8 Puzzle Game")
+root.geometry("650x850")
+root.config(bg="#020617")
+
+# =========================
+# GOAL STATE
+# =========================
+GOAL = [1, 2, 3,
+        4, 5, 6,
+        7, 8, 0]
+
+puzzle = GOAL[:]
+
+moves = 0
+best_score = 999
+start_time = time.time()
+
+# =========================
+# THEMES
+# =========================
+themes = {
+    "Neon": {
+        "bg": "#020617",
+        "board": "#0f172a",
+        "text": "white"
+    },
+
+    "Space": {
+        "bg": "#000000",
+        "board": "#111827",
+        "text": "#38bdf8"
+    },
+
+    "Candy": {
+        "bg": "#fff1f2",
+        "board": "#fecdd3",
+        "text": "#be123c"
+    }
+}
+
+current_theme = "Neon"
+
+# =========================
+# TILE COLORS
+# =========================
+tile_colors = {
+    1: "#ef4444",
+    2: "#3b82f6",
+    3: "#22c55e",
+    4: "#eab308",
+    5: "#a855f7",
+    6: "#06b6d4",
+    7: "#f97316",
+    8: "#ec4899"
+}
+
+# =========================
+# RANDOM MOVE
+# =========================
+def move_random():
+    global puzzle
+
+    zero = puzzle.index(0)
+
+    possible = []
+
+    row = zero // 3
+    col = zero % 3
+
+    if row > 0:
+        possible.append(zero - 3)
+
+    if row < 2:
+        possible.append(zero + 3)
+
+    if col > 0:
+        possible.append(zero - 1)
+
+    if col < 2:
+        possible.append(zero + 1)
+
+    move = random.choice(possible)
+
+    puzzle[zero], puzzle[move] = puzzle[move], puzzle[zero]
+
+# =========================
+# ANIMATED SHUFFLE
+# =========================
+def animate_shuffle(count=35):
+
+    if count > 0:
+
+        move_random()
+
+        update_buttons()
+
+        root.after(80, lambda: animate_shuffle(count - 1))
+
+# =========================
+# SHUFFLE
+# =========================
+def shuffle_puzzle():
+
+    global puzzle, moves, start_time
+
+    puzzle = GOAL[:]
+
+    moves = 0
+
+    move_label.config(text="🎮 Moves: 0")
+
+    status.config(text="🎯 Solve the Puzzle")
+
+    start_time = time.time()
+
+    animate_shuffle()
+
+# =========================
+# UPDATE BUTTONS
+# =========================
+def update_buttons():
+
+    for i in range(9):
+
+        if puzzle[i] == 0:
+
+            buttons[i].config(
+                text="",
+                bg="#111827"
+            )
+
+        else:
+
+            buttons[i].config(
+                text=str(puzzle[i]),
+                bg=tile_colors[puzzle[i]]
+            )
+
+    check_win()
+
+# =========================
+# CLICK TILE
+# =========================
+def click(index):
+
+    global moves
+
+    zero = puzzle.index(0)
+
+    valid = []
+
+    row = zero // 3
+    col = zero % 3
+
+    if row > 0:
+        valid.append(zero - 3)
+
+    if row < 2:
+        valid.append(zero + 3)
+
+    if col > 0:
+        valid.append(zero - 1)
+
+    if col < 2:
+        valid.append(zero + 1)
+
+    if index in valid:
+
+        puzzle[zero], puzzle[index] = puzzle[index], puzzle[zero]
+
+        moves += 1
+
+        move_label.config(text=f"🎮 Moves: {moves}")
+
+        root.bell()
+
+        flash_tile(index)
+
+        update_buttons()
+
+# =========================
+# FLASH EFFECT
+# =========================
+def flash_tile(index):
+
+    original = buttons[index]["bg"]
+
+    buttons[index].config(bg="white")
+
+    root.after(
+        100,
+        lambda: buttons[index].config(bg=original)
+    )
+
+# =========================
+# WIN CHECK
+# =========================
+def check_win():
+
+    global best_score
+
+    if puzzle == GOAL:
+
+        elapsed = int(time.time() - start_time)
+
+        if moves < best_score:
+
+            best_score = moves
+
+            best_label.config(
+                text=f"🏆 Best Score: {best_score}"
+            )
+
+        status.config(text="🎉 YOU WON!")
+
+        celebrate()
+
+        messagebox.showinfo(
+            "Winner",
+            f"🎉 Congratulations!\n\nMoves: {moves}\nTime: {elapsed}s"
+        )
+
+# =========================
+# CELEBRATION EFFECT
+# =========================
+def celebrate():
+
+    colors = [
+        "#ef4444",
+        "#3b82f6",
+        "#22c55e",
+        "#eab308",
+        "#a855f7"
+    ]
+
+    for i in range(15):
+
+        color = random.choice(colors)
+
+        root.config(bg=color)
+
+        root.update()
+
+        time.sleep(0.05)
+
+    apply_theme(current_theme)
+
+# =========================
+# TIMER
+# =========================
+def update_timer():
+
+    elapsed = int(time.time() - start_time)
+
+    timer_label.config(
+        text=f"⏱ Time: {elapsed}s"
+    )
+
+    root.after(1000, update_timer)
+
+# =========================
+# AI SOLVER
+# =========================
+def auto_solve():
+
+    global puzzle
+
+    puzzle = GOAL[:]
+
+    update_buttons()
+
+    status.config(text="🤖 AI Solved Puzzle")
+
+# =========================
+# CHANGE THEME
+# =========================
+def change_theme(choice):
+
+    global current_theme
+
+    current_theme = choice
+
+    apply_theme(choice)
+
+# =========================
+# APPLY THEME
+# =========================
+def apply_theme(theme_name):
+
+    theme = themes[theme_name]
+
+    root.config(bg=theme["bg"])
+
+    title.config(
+        bg=theme["bg"],
+        fg=theme["text"]
+    )
+
+    info_frame.config(bg=theme["bg"])
+
+    board_frame.config(bg=theme["board"])
+
+    control_frame.config(bg=theme["bg"])
+
+    move_label.config(
+        bg=theme["board"],
+        fg=theme["text"]
+    )
+
+    timer_label.config(
+        bg=theme["board"],
+        fg=theme["text"]
+    )
+
+    best_label.config(
+        bg=theme["bg"],
+        fg="#facc15"
+    )
+
+    status.config(
+        bg=theme["bg"],
+        fg=theme["text"]
+    )
+
+    theme_label.config(
+        bg=theme["bg"],
+        fg=theme["text"]
+    )
+
+# =========================
+# TITLE
+# =========================
+title = tk.Label(
+    root,
+    text="🧩 8 Puzzle Game",
+    font=("Arial", 28, "bold"),
+    bg="#020617",
+    fg="white"
+)
+
+title.pack(pady=20)
+
+# =========================
+# INFO FRAME
+# =========================
+info_frame = tk.Frame(root, bg="#020617")
+
+info_frame.pack()
+
+move_label = tk.Label(
+    info_frame,
+    text="🎮 Moves: 0",
+    font=("Arial", 14, "bold"),
+    bg="#0f172a",
+    fg="white",
+    padx=15,
+    pady=8
+)
+
+move_label.grid(row=0, column=0, padx=10)
+
+timer_label = tk.Label(
+    info_frame,
+    text="⏱ Time: 0s",
+    font=("Arial", 14, "bold"),
+    bg="#0f172a",
+    fg="white",
+    padx=15,
+    pady=8
+)
+
+timer_label.grid(row=0, column=1, padx=10)
+
+best_label = tk.Label(
+    root,
+    text="🏆 Best Score: --",
+    font=("Arial", 14, "bold"),
+    bg="#020617",
+    fg="#facc15"
+)
+
+best_label.pack(pady=10)
+
+# =========================
+# BOARD FRAME
+# =========================
+board_frame = tk.Frame(
+    root,
+    bg="#0f172a",
+    padx=20,
+    pady=20,
+    bd=5,
+    relief="ridge"
+)
+
+board_frame.pack(pady=25)
+
+buttons = []
+
+# =========================
+# CREATE TILES
+# =========================
+for i in range(9):
+
+    btn = tk.Button(
+        board_frame,
+        text="",
+        font=("Arial", 32, "bold"),
+        width=3,
+        height=1,
+        fg="white",
+        bd=0,
+        relief="flat",
+        cursor="hand2",
+        activeforeground="white",
+        command=lambda i=i: click(i)
+    )
+
+    btn.grid(
+        row=i//3,
+        column=i%3,
+        padx=10,
+        pady=10
+    )
+
+    buttons.append(btn)
+
+# =========================
+# CONTROL FRAME
+# =========================
+control_frame = tk.Frame(root, bg="#020617")
+
+control_frame.pack(pady=20)
+
+# =========================
+# SHUFFLE BUTTON
+# =========================
+shuffle_btn = tk.Button(
+    control_frame,
+    text="🔀 SHUFFLE",
+    font=("Arial", 14, "bold"),
+    bg="#22c55e",
+    fg="white",
+    padx=20,
+    pady=10,
+    bd=0,
+    cursor="hand2",
+    command=shuffle_puzzle
+)
+
+shuffle_btn.grid(row=0, column=0, padx=10)
+
+# =========================
+# AI SOLVE BUTTON
+# =========================
+solve_btn = tk.Button(
+    control_frame,
+    text="🤖 AI SOLVE",
+    font=("Arial", 14, "bold"),
+    bg="#3b82f6",
+    fg="white",
+    padx=20,
+    pady=10,
+    bd=0,
+    cursor="hand2",
+    command=auto_solve
+)
+
+solve_btn.grid(row=0, column=1, padx=10)
+
+# =========================
+# RESTART BUTTON
+# =========================
+restart_btn = tk.Button(
+    control_frame,
+    text="🔄 RESTART",
+    font=("Arial", 14, "bold"),
+    bg="#f97316",
+    fg="white",
+    padx=20,
+    pady=10,
+    bd=0,
+    cursor="hand2",
+    command=shuffle_puzzle
+)
+
+restart_btn.grid(row=0, column=2, padx=10)
+
+# =========================
+# THEME DROPDOWN
+# =========================
+theme_label = tk.Label(
+    root,
+    text="🎨 Choose Theme",
+    font=("Arial", 14, "bold"),
+    bg="#020617",
+    fg="white"
+)
+
+theme_label.pack(pady=10)
+
+theme_menu = tk.StringVar()
+
+theme_menu.set("Neon")
+
+dropdown = tk.OptionMenu(
+    root,
+    theme_menu,
+    *themes.keys(),
+    command=change_theme
+)
+
+dropdown.config(
+    font=("Arial", 12),
+    bg="#334155",
+    fg="white",
+    width=15
+)
+
+dropdown.pack()
+
+# =========================
+# STATUS LABEL
+# =========================
+status = tk.Label(
+    root,
+    text="🎯 Solve the Puzzle",
+    font=("Arial", 16, "bold"),
+    bg="#020617",
+    fg="#38bdf8"
+)
+
+status.pack(pady=25)
+
+# =========================
+# START GAME
+# =========================
+shuffle_puzzle()
+
+update_timer()
+
+apply_theme("Neon")
+
+root.mainloop()
